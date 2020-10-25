@@ -6,7 +6,89 @@ import { StyleSheet, Text, TouchableHighlight, View, Image, FlatList } from 'rea
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 
+import {sudoku_generator} from './sudokuGenerator';
+let game_levels = require("./game_levels");
+
 const Stack = createStackNavigator();
+
+/*
+	SETUP
+*/
+
+let difficulties = [];
+let time_tracker = {};
+
+for (difficulty of Object.keys(game_levels)){
+	time_tracker[difficulty] = {};
+	difficulties.push({
+		"key" : difficulty[0].toUpperCase() + difficulty.substring(1, difficulty.length),
+		"level_count" : Object.values(game_levels[difficulty]).length
+	})
+}
+
+//
+
+let indexTracker = {
+	stringIndexToGridItem_Table : {}, // eg. "top_left_i2" --> 1
+	gridItemToStringIndex_Table : {},  // eg. 27 --> "middle_left_i1"
+
+	getStringIndexFromGridItem : function(gridItemID){
+		return indexTracker.gridItemToStringIndex_Table[gridItemID];
+	},
+
+	getGridItemFromStringIndex : function(stringIndex){
+		return indexTracker.stringIndexToGridItem_Table[stringIndex];
+	}
+}
+
+function generateIndexTracker(){
+
+	// Get the string index for the first item in each subgrid
+	let indexTracker_origins = {
+		"top_left" : (9 * 0),
+		"top_middle" : (9 * 0) + 3,
+		"top_right" : (9 * 0) + 6,
+
+		"center_left" : (9 * 3),
+		"center_middle" : (9 * 3) + 3,
+		"center_right" : (9 * 3) + 6,
+
+		"bottom_left" : (9 * 6),
+		"bottom_middle" : (9 * 6) + 3,
+		"bottom_right" : (9 * 6) + 6,
+	}
+
+	// Build string index from grid id table . . .
+	for (let [subgrid, initial_index] of Object.entries(indexTracker_origins)){
+
+		// count 3, skip 6, count 3, skip 6, count 3
+		let current_index = initial_index - 1;
+		let skip_count = 0;
+
+		for (let i = 1; i < 10; i++){
+
+			indexTracker.gridItemToStringIndex_Table[`${subgrid}_i${i}`] = ++current_index;
+
+			skip_count++;
+			if (skip_count >= 3 ){
+				skip_count = 0;
+				current_index = current_index + 6;
+			}
+		}
+
+	}
+
+	// Invert table for grid id from string index table . . .
+
+	for (let [gridItemID, stringIndex] of Object.entries(indexTracker.gridItemToStringIndex_Table)){
+		indexTracker.stringIndexToGridItem_Table[stringIndex, gridItemID];
+	}
+
+}
+
+generateIndexTracker();
+
+
 
 /* PAGINATION */
 
@@ -63,27 +145,15 @@ const MenuScreen = ({ navigation }) => {
 			<View style={styles.menuListView}>
 
 				<FlatList
-					data={[
-						{
-							key : "Easy"
-						},
-						{
-							key : "Medium"
-						},
-						{
-							key : "Hard"
-						},
-						{
-							key : "Expert"
-						},
-					]}
+					data={difficulties}
 					renderItem={ ({item}) => {
 						return (
 							<TouchableHighlight
 								style={styles.menuButton}
 								onPress={() => {
 									navigation.navigate('Levels', {
-										difficulty : item.key
+										difficulty : item.key,
+										level_count : item.level_count
 									})
 								}}
 							>
@@ -92,7 +162,7 @@ const MenuScreen = ({ navigation }) => {
 										{item.key}
 									</Text>
 									<Text style={styles.menuButtonSubtext}>
-										0/100
+										{`0/${item.level_count}`}
 									</Text>
 								</View>
 								
@@ -113,13 +183,16 @@ const MenuScreen = ({ navigation }) => {
 const LevelsScreen = ({ navigation, route }) => {
 
 	let levels_list = [];
-	for (let i = 1; i <= 100; i++){
+	
+	let difficulty = route.params.difficulty;
+	let level_count = route.params.level_count;
+
+	for (let i = 1; i <= level_count; i++){
 		levels_list.push({
 			key : i
 		})
 	}
 
-	let difficulty = route.params.difficulty;
 	return (
 
 		<View style={styles.levelsContainer}>
@@ -146,7 +219,7 @@ const LevelsScreen = ({ navigation, route }) => {
 
 			<View style={styles.levelsHeader}>
 				<Text style={styles.levelsHeaderTop}>{difficulty}</Text>
-				<Text style={styles.levelsHeaderBottom}>0/100</Text>
+				<Text style={styles.levelsHeaderBottom}>{`0/${level_count}`}</Text>
 			</View>
 			
 
@@ -159,6 +232,7 @@ const LevelsScreen = ({ navigation, route }) => {
 							<TouchableHighlight
 								style={styles.levelButton}
 								onPress={() => {
+									time_tracker[difficulty.toLowerCase()][item.key] = "0:00.00";
 									navigation.navigate('Game', {
 										difficulty : difficulty,
 										level_no : item.key
@@ -170,7 +244,9 @@ const LevelsScreen = ({ navigation, route }) => {
 										{`Level ${item.key}`}
 									</Text>
 									<Text style={styles.levelButtonSubtext}>
-										0:00:00
+										{
+											`${(typeof time_tracker[difficulty.toLowerCase()][item.key] == "undefined") ? "" : time_tracker[difficulty.toLowerCase()][item.key]}`
+										}
 									</Text>
 								</View>
 								
@@ -188,14 +264,26 @@ const LevelsScreen = ({ navigation, route }) => {
 	)
 }
 
+let difficulty;
+let level_no;
 
+let sudoku_string_master;
+let sudoku_string_play;
 
 
 const GameScreen = ({ navigation, route }) => {
 
-	let subgrid_reference = {};
-	let difficulty = route.params.difficulty;
-	let level_no = route.params.level_no;
+	subgrid_reference = {};
+
+	//
+
+	difficulty = route.params.difficulty;
+	level_no = route.params.level_no;
+
+	//
+
+	sudoku_string_master = game_levels[difficulty.toLowerCase()][level_no];
+	sudoku_string_play = sudoku_string_master + "";
 
 	return (
 
@@ -411,12 +499,12 @@ const SubgridItem = ({subgridID, place}) => (
 		<TouchableHighlight
 			style={gameStyles.subgridItemHighlight}
 			onPress={() => {
-				alert('//TODO: Functionality')
+				alert(`You pressed ${place}`)
 			}}
 		>
 		
 			<Text style={gameStyles.subgridItemText}>
-				4
+				{`${sudoku_string_master[indexTracker.getStringIndexFromGridItem(place)] == "." ? "" : sudoku_string_master[indexTracker.getStringIndexFromGridItem(place)]}`}
 			</Text>
 		</TouchableHighlight>
 	</View>
