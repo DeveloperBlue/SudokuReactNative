@@ -25,11 +25,12 @@ You can now access the application on an emulator or your own device. You may ne
 
 # Resources
 GitHub: [https://github.com/DeveloperBlue/SudokuReactNative](https://github.com/DeveloperBlue/SudokuReactNative)
-Submission Guidelines: []()
-Project Writeup: []()
-Demo Video: []()
-Powerpoint Presentation: []()
-Code Documentation: []()
+Submission Guidelines: [Project Presentation Guidelines](https://drive.google.com/file/d/1_YJA3vbTfpRDNwctqR1u6q8YyEwWnGFC/view?usp=sharing)
+Project Writeup: [Project Writeup](https://docs.google.com/document/d/1Ofi6xLMmKKiCjp8EfGCyjxL1VuNE1JYLhnORjuwlngA/edit?usp=sharing)
+Demo Video: [Project Demo](https://drive.google.com/file/d/1hKVK1f8y-LWLpMrp-oQB1tSHM8QCYyCw/view?usp=sharing
+)
+Powerpoint Presentation: [Project Presentation](https://docs.google.com/presentation/d/1w79kCRS9gS5Znut6pMBTXsKxGiZhPEcG5i4CGUw5RK4/edit?usp=sharing)
+Code Documentation: [Program Code](https://docs.google.com/document/d/1akrps76uckkHw9fKZCKvGJ-KX_I67fGX02dvEbbVOvA/edit?usp=sharing)
 
 # Acknowledgements
 
