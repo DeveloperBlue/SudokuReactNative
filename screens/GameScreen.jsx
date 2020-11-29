@@ -1,15 +1,12 @@
 import 'react-native-gesture-handler';
 import { StatusBar } from 'expo-status-bar';
 import React, {useState, useEffect} from 'react';
-import { StyleSheet, Text, TouchableHighlight, View, Image, FlatList } from 'react-native';
+import { StyleSheet, Text, TouchableHighlight, Pressable, View, Image, FlatList } from 'react-native';
 
 import {sudoku_generator} from './../sudokuGenerator';
 import indexTracker from "./../indexTracker";
 
 //
-
-let grid_item_selected_bkg_color = "";
-let grid_item_selected_text_color = "";
 
 const GameScreen = ({ navigation, route }) => {
 
@@ -29,28 +26,29 @@ const GameScreen = ({ navigation, route }) => {
 
 	//
 
-	const [selectedSubgridItem, setSelectedSubgridItem] = useState();
-		// grid-key id (eg. center_left_2)
+	const [selectedGridItem, setSelectedGridItem] = useState(undefined);
 
 	// Valid states: 'enabled', 'disabled', 'active'
 	const [buttonHiglights, updateButtonHighlights] = useState({
-		"b1" : "enabled", 
-		"b2" : "enabled",
-		"b3" : "enabled",
-		"b4" : "enabled",
-		"b5" : "enabled",
-		"b6" : "enabled",
-		"b7" : "enabled",
-		"b8" : "enabled",
-		"b9" : "enabled",
+		"b1" : "disabled", 
+		"b2" : "disabled",
+		"b3" : "disabled",
+		"b4" : "disabled",
+		"b5" : "disabled",
+		"b6" : "disabled",
+		"b7" : "disabled",
+		"b8" : "disabled",
+		"b9" : "disabled",
 	})
 
 	const updateNumberButtons = () => {
 
-		// if the 'selectedSubgridItem' is immutable, disable buttons
-		// otherwise, highlight the number that 'selectedSubgridItem' holds as a value
+		// if the 'selectedGridItem' is immutable, disable buttons
+		// otherwise, highlight the number that 'selectedGridItem' holds as a value
 
-		let stringIndex = indexTracker.getTracker({gridItem : selectedSubgridItem}).stringIndex;
+		if (selectedGridItem == undefined) return;
+
+		let stringIndex = selectedGridItem.stringIndex;
 
 		if (sudoku_string_master[stringIndex] !== "."){
 
@@ -122,7 +120,8 @@ const GameScreen = ({ navigation, route }) => {
 		// is selected item writeable and non-empty?
 		// set value to empty, push to history
 
-		let stringIndex = indexTracker.getTracker({gridItem : selectedSubgridItem}).stringIndex;
+		if (selectedGridItem == undefined) return;
+		let stringIndex = selectedGridItem.stringIndex;
 
 		if (sudoku_string_master[stringIndex] !== ".") return; // Item is immutable
 		if (sudoku_string_play[stringIndex] == ".") return; // Item is already clear
@@ -188,66 +187,6 @@ const GameScreen = ({ navigation, route }) => {
 
 	}
 
-	//
-
-	const [gridItemHighlights, updateGridItemHighlights] = useState({});
-
-	// Red higlight duplicates in rows,
-	// Bold other areas the number appears
-	// Dark highlight the row and column background
-	const highlightRelevantGridItems = () => {
-
-		let currentIndexItem = indexTracker.getTracker({gridItem : selectedSubgridItem});
-		let stringIndex = currentIndexItem.stringIndex;
-
-		let currentSelectedValue = sudoku_string_play[stringIndex];
-
-		let newGridItemHighlights = {};
-
-		// TODO
-		// MORE EFFICIENT
-		// Pass row && col props to each cell
-		// cells check if the current row and col match, and if the current values match, then apply their css
-		// no need to loop through them all!
-
-
-		for (let i = 0; i < sudoku_string_play.length; i++){
-
-			let indexItemBeta = indexTracker.getTracker({stringIndex : i});
-
-			let isOfSameTable = (stringIndex !== i) && (indexItemBeta.table.row == currentIndexItem.table.row) && (indexItemBeta.table.col == currentIndexItem.table.col);
-			let hasDuplicateValue = (currentSelectedValue !== ".") && (currentSelectedValue == sudoku_string_play[indexItemBeta.stringIndex]);
-
-			if (isOfSameTable && hasDuplicateValue){
-				// Encountered a BAD duplicate
-				// Mutable objects get a red background, immutable objects get red text.
-
-				newGridItemHighlights[i.toString()] = "duplicate";
-
-			} else if (isOfSameTable){
-				// Highlight the row and column with a darker bkg
-
-				newGridItemHighlights[i.toString()] = "table";
-
-			} else if (hasDuplicateValue){
-				// Bold the text for these items
-
-				newGridItemHighlights[i.toString()] = "similar"
-			}
-
-		}
-
-		
-
-		updateGridItemHighlights(newGridItemHighlights);
-
-	}
-
-
-	useEffect(() => {
-		
-	}, [gridItemHighlights])
-
 	// Item pressed in grid
 		// Highlight grid item
 		// Rerender button bar based on mutability and value
@@ -256,16 +195,17 @@ const GameScreen = ({ navigation, route }) => {
 	useEffect(() => {
 
 		updateNumberButtons();
-		highlightRelevantGridItems();
 
-	}, [selectedSubgridItem]);
+	}, [selectedGridItem]);
 
 	// Number button pressed
 		// Update grid item
 
 	const handleNumberPressed = (number) => {
 
-		let stringIndex = indexTracker.getTracker({gridItem : selectedSubgridItem}).stringIndex;
+		if (selectedGridItem == undefined) return;
+
+		let stringIndex = selectedGridItem.stringIndex;
 
 		if (sudoku_string_master[stringIndex] !== ".") return; // Item is immutable
 
@@ -294,58 +234,74 @@ const GameScreen = ({ navigation, route }) => {
 		}
 
 		updateNumberButtons();
-		highlightRelevantGridItems();
 
 	}, [sudoku_string_play]);
 
 
 	////////////////////////////////////////////////////
 	
-	const Subgrid = ({subgridID}) => (
-		<View style={[gameStyles.subgrid, gameStyles[`subgrid_${subgridID}`]]}>
+	const Grid = ({gridID}) => (
+		<View style={[gameStyles.grid, gameStyles[`grid_${gridID}`]]}>
 			{	
 				[
-					`${subgridID}_i1`, `${subgridID}_i2`, `${subgridID}_i3`,
-					`${subgridID}_i4`, `${subgridID}_i5`, `${subgridID}_i6`,
-					`${subgridID}_i7`, `${subgridID}_i8`, `${subgridID}_i9`,
-				].map(function(num){
-					return SubgridItem({subgridID: subgridID, place : num, stringIndex : indexTracker.getTracker({gridItem : num}).stringIndex});
+					`${gridID}_i1`, `${gridID}_i2`, `${gridID}_i3`,
+					`${gridID}_i4`, `${gridID}_i5`, `${gridID}_i6`,
+					`${gridID}_i7`, `${gridID}_i8`, `${gridID}_i9`,
+				].map(function(internalGridItemID){
+
+					return GridItem({
+						gridID: gridID,
+						indexObject : indexTracker.getTracker({gridItem : internalGridItemID})
+					})
+
 				})
 			}
 		</View>
 	)
 
-	const SubgridItem = ({subgridID, place, stringIndex}) => (
-		<View style={gameStyles.subgridItemContainer}>
-			<TouchableHighlight
+	const GridItem = ({gridID, indexObject}) => (
+		<View style={gameStyles.gridItemContainer}>
+			<Pressable
+
 				activeOpacity={1}
-				underlayColor={'#f9f9f9'}
-				style={[gameStyles.subgridItemHighlight, (selectedSubgridItem == place) ? {backgroundColor :  "#e6e6e6"} : null, (gridItemHighlights[stringIndex] == "table") ? {backgroundColor : "#000000"} : null, (gridItemHighlights[stringIndex] == "duplicate") ? {backgroundColor : "red"} : null]}
-				onPress={() => {
-					setSelectedSubgridItem(place);
+				underlayColor={'#e6e6e6'}
+
+				style={[
+					gameStyles.gridItemHighlight,
+					(selectedGridItem && (selectedGridItem.table.row == indexObject.table.row || selectedGridItem.table.col == indexObject.table.col)) ? {backgroundColor : "#e9e9e9"} : null, // Same row/column
+					(selectedGridItem && selectedGridItem.gridItem == indexObject.gridItem) ? {backgroundColor :  "#d4d4d4"} : null, // Currently selected grid item
+					(selectedGridItem && sudoku_string_play[selectedGridItem.stringIndex] !== "." && selectedGridItem.gridItem !== indexObject.gridItem && (selectedGridItem.table.row == indexObject.table.row || selectedGridItem.table.col == indexObject.table.col) && sudoku_string_play[selectedGridItem.stringIndex] == sudoku_string_play[indexObject.stringIndex]) ? {backgroundColor: "#ff9999"} : null, // bad duplicate
+				]}
+				
+				onPressIn={() => {
+					setSelectedGridItem(indexObject)
 				}}
 			>
 			
-				<Text style={[gameStyles.subgridItemText, (sudoku_string_master[stringIndex] == ".") ? {color : "#03a9f4"} : null, (gridItemHighlights[stringIndex] == "similar") ? {fontWeight : "bold"} : null, , (gridItemHighlights[stringIndex] == "duplicate") ? {color : "red"} : null]}>
-					{`${sudoku_string_play[stringIndex] == "." ? "" : sudoku_string_play[stringIndex]}`}
+				<Text style={[
+					gameStyles.gridItemText,
+					(sudoku_string_master[indexObject.stringIndex] == ".") ? {color : "#0f48a2"} : null, // default text color of a mutable item
+					(selectedGridItem && sudoku_string_play[selectedGridItem.stringIndex] !== "." && sudoku_string_play[selectedGridItem.stringIndex] == sudoku_string_play[indexObject.stringIndex]) ? {fontWeight : "bold"} : null, // Similar values
+				]}>
+					{`${sudoku_string_play[indexObject.stringIndex] == "." ? "" : sudoku_string_play[indexObject.stringIndex]}`}
 				</Text>
-			</TouchableHighlight>
+			</Pressable>
 		</View>
 	)
 
-	const NumberButton = ({number}) => (
+	const NumberButton = ({buttonNumber}) => (
 
 		<TouchableHighlight
 			activeOpacity={1}
-			underlayColor={'transparent'}
+			underlayColor={'#e9e9e9'}
 			style={gameStyles.numberButton}
 			onPress={() => {
-				handleNumberPressed(number.replace("b", ""));
+				handleNumberPressed(buttonNumber.replace("b", ""));
 			}}
 		>
 
-			<Text style={[gameStyles.numberButtonText, gameStyles["numberButtonText_" + buttonHiglights[number]]]}>
-				{number.replace("b", "")}
+			<Text style={[gameStyles.numberButtonText, gameStyles["numberButtonText_" + buttonHiglights[buttonNumber]]]}>
+				{buttonNumber.replace("b", "")}
 			</Text>
 		</TouchableHighlight>
 	)
@@ -366,6 +322,8 @@ const GameScreen = ({ navigation, route }) => {
 
 					<TouchableHighlight
 						style={gameStyles.backButton}
+						activeOpacity={1}
+						underlayColor={'#d4d4d4'}
 						onPress={() => {
 							navigation.navigate('Levels')
 						}}
@@ -392,6 +350,8 @@ const GameScreen = ({ navigation, route }) => {
 
 						<TouchableHighlight
 							style={gameStyles.topbar_right_button}
+							activeOpacity={1}
+							underlayColor={'#d4d4d4'}
 							onPress={() => {
 								alert('Open Themes Menu')
 							}}
@@ -410,6 +370,8 @@ const GameScreen = ({ navigation, route }) => {
 
 						<TouchableHighlight
 							style={gameStyles.topbar_right_button}
+							activeOpacity={1}
+							underlayColor={'#d4d4d4'}
 							onPress={() => {
 								alert('Open Settings Menu')
 							}}
@@ -451,10 +413,8 @@ const GameScreen = ({ navigation, route }) => {
 								"top_left", "top_middle", "top_right",
 								"center_left", "center_middle", "center_right",
 								"bottom_left", "bottom_middle", "bottom_right",
-							].map(function(subgridID){
-
-								return Subgrid({subgridID : subgridID});
-
+							].map(function(gridID){
+								return Grid({gridID : gridID});
 							})
 						}
 					</View>
@@ -467,6 +427,8 @@ const GameScreen = ({ navigation, route }) => {
 
 						<TouchableHighlight
 							style={gameStyles.function_button}
+							activeOpacity={1}
+							underlayColor={'#e9e9e9'}
 							onPress={handleUndoPressed}
 						>
 						
@@ -485,6 +447,8 @@ const GameScreen = ({ navigation, route }) => {
 
 						<TouchableHighlight
 							style={gameStyles.function_button}
+							activeOpacity={1}
+							underlayColor={'#e9e9e9'}
 							onPress={handleErasePressed}
 						>
 						
@@ -503,6 +467,8 @@ const GameScreen = ({ navigation, route }) => {
 
 						<TouchableHighlight
 							style={gameStyles.function_button}
+							activeOpacity={1}
+							underlayColor={'#e9e9e9'}
 							onPress={handleHintPressed}
 						>
 						
@@ -527,8 +493,8 @@ const GameScreen = ({ navigation, route }) => {
 								"b1", "b2", "b3",
 								"b4", "b5", "b6",
 								"b7", "b8", "b9",
-							].map(function(num){
-								return NumberButton({number : num})
+							].map(function(buttonNumber){
+								return NumberButton({buttonNumber : buttonNumber})
 							})
 						}
 					</View>
@@ -704,7 +670,7 @@ const gameStyles = StyleSheet.create({
 		flex : 1,
 		alignItems: 'center',
 		justifyContent: 'space-between',
-		padding : 30,
+		padding : 20,
 		paddingTop : 40,
 	},
 
@@ -721,17 +687,19 @@ const gameStyles = StyleSheet.create({
 
 	gameContainer : {
 		flex : 8,
+		padding : 10,
 		width : "100%",
 		alignItems : "center",
 		justifyContent : "center",
 	},
 
 	buttonContainer : {
-		flex : 2,
+		flex : 3,
+		padding : 10,
 		width : "100%",
 		alignContent : "center",
 		justifyContent : "center",
-		marginBottom : 60
+		marginBottom : 40
 	},
 
 	// TOPBAR SUBCONTAINER
@@ -739,13 +707,13 @@ const gameStyles = StyleSheet.create({
 		// BACK BUTTON
 
 	backButton : {
-		borderWidth : 2,
+		borderWidth : 0,
 		borderRadius : 4,
 		borderColor : "#444",
 		alignItems : "center",
 		justifyContent : "center",
-		paddingLeft : 12,
-		paddingRight : 12
+		paddingLeft : 4,
+		paddingRight : 4
 	},
 
 	back_button_view : {
@@ -766,7 +734,6 @@ const gameStyles = StyleSheet.create({
 	},
 
 	topbar_right : {
-		width : 240,
 		flexDirection : "row",
 		alignItems : "flex-end",
 		justifyContent : "flex-end",
@@ -781,6 +748,7 @@ const gameStyles = StyleSheet.create({
 		marginLeft: 5,
 		alignItems : "center",
 		justifyContent : "center",
+		borderRadius : 4,
 	},
 
 	topbar_img_icon : {
@@ -808,7 +776,8 @@ const gameStyles = StyleSheet.create({
 		width : "100%",
 		alignItems : "flex-end",
 		color : "#eaeaea",
-		paddingRight : 4
+		paddingRight : 4,
+		marginBottom : 5
 	},
 
 		// GAME SQUARE CONTAINER
@@ -822,7 +791,7 @@ const gameStyles = StyleSheet.create({
 		flexWrap : "wrap"
 	},
 
-	subgrid : {
+	grid : {
 		width : "33.33%",
 		height : "33.33%",
 		alignSelf : "flex-start",
@@ -833,7 +802,7 @@ const gameStyles = StyleSheet.create({
 		padding : 2,
 	},
 
-	subgridItemContainer : {
+	gridItemContainer : {
 		width : "33.33%",
 		height : "33.33%",
 		alignSelf : "flex-start",
@@ -842,7 +811,7 @@ const gameStyles = StyleSheet.create({
 		padding : 2,
 	},
 
-	subgridItemHighlight : {
+	gridItemHighlight : {
 		width : "100%",
 		height : "100%",
 		alignItems : "center",
@@ -851,7 +820,7 @@ const gameStyles = StyleSheet.create({
 		backgroundColor : "#f9f9f9",
 	},
 
-	subgridItemText : {
+	gridItemText : {
 		color : "#000000"
 	},
 
@@ -865,6 +834,11 @@ const gameStyles = StyleSheet.create({
 		flexDirection : "row",
 		justifyContent : "space-around",
 		alignContent : "center"
+	},
+
+	function_button : {
+		padding : 10,
+		borderRadius : 4,
 	},
 
 	function_button_view : {
@@ -886,22 +860,24 @@ const gameStyles = StyleSheet.create({
 
 	numbersContainer : {
 		width : "100%",
-		marginTop : 10,
+		marginTop : 20,
 		flexDirection : "row",
 		justifyContent : "space-around",
 		alignContent : "center"
 	},
 
 	numberButton : {
-		padding : 10
+		flex : 1,
+		borderRadius : 4
 	},
 
 	numberButtonText : {
 		fontSize: 34,
+		textAlign : "center"
 	},
 	numberButtonText_active : {
-		color : "#03a9f4",
-		fontWeight : "bold"
+		color : "#6687b8",
+		fontWeight : "100"
 	},
 	numberButtonText_enabled : {
 		color : "#000",
@@ -913,29 +889,29 @@ const gameStyles = StyleSheet.create({
 
 	// GRID STYLINGS
 
-	subgrid_top_middle : {
+	grid_top_middle : {
 		borderLeftWidth : gridThemeConfig.sudokuGridBorderWidth,
 		borderRightWidth : gridThemeConfig.sudokuGridBorderWidth,
 		borderColor : gridThemeConfig.sudokuGridBorderColor
 	},
-	subgrid_bottom_middle : {
+	grid_bottom_middle : {
 		borderLeftWidth : gridThemeConfig.sudokuGridBorderWidth,
 		borderRightWidth : gridThemeConfig.sudokuGridBorderWidth,
 		borderColor : gridThemeConfig.sudokuGridBorderColor
 	},
 
-	subgrid_center_left : {
+	grid_center_left : {
 		borderTopWidth : gridThemeConfig.sudokuGridBorderWidth,
 		borderBottomWidth : gridThemeConfig.sudokuGridBorderWidth,
 		borderColor : gridThemeConfig.sudokuGridBorderColor
 	},
-	subgrid_center_right : {
+	grid_center_right : {
 		borderTopWidth : gridThemeConfig.sudokuGridBorderWidth,
 		borderBottomWidth : gridThemeConfig.sudokuGridBorderWidth,
 		borderColor : gridThemeConfig.sudokuGridBorderColor
 	},
 
-	subgrid_center_middle : {
+	grid_center_middle : {
 		borderLeftWidth : gridThemeConfig.sudokuGridBorderWidth,
 		borderRightWidth : gridThemeConfig.sudokuGridBorderWidth,
 		borderTopWidth : gridThemeConfig.sudokuGridBorderWidth,

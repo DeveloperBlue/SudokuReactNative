@@ -45,6 +45,8 @@ const MenuScreen = ({ navigation }) => {
 					renderItem={ ({item}) => {
 						return (
 							<TouchableHighlight
+								activeOpacity={1}
+								underlayColor={'#1565c0'}
 								style={styles.menuButton}
 								onPress={() => {
 									navigation.navigate('Levels', {
@@ -104,7 +106,7 @@ const styles = StyleSheet.create({
 		justifyContent : "center",
 		textAlign : "center",
 		backgroundColor : "#007acc",
-		borderRadius : 20,
+		borderRadius : 15,
 		width : 120,
 		height : 120
 	},
@@ -133,9 +135,9 @@ const styles = StyleSheet.create({
 		alignContent : "center",
 		justifyContent : "center",
 		backgroundColor : "#007acc",
-		height : 80,
+		height : 60,
 		paddingLeft : 24,
-		borderRadius : 4,
+		borderRadius : 2,
 		marginBottom : 10
 	},
 
@@ -149,8 +151,8 @@ const styles = StyleSheet.create({
 		fontSize : 12,
 		position : "absolute",
 		textAlign : "right",
-		right : 10,
-		bottom : -18
+		right : 6,
+		bottom : -10
 	},
 
 	// LEVELS PAGE

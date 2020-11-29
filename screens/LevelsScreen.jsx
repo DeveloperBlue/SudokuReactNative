@@ -30,6 +30,8 @@ const LevelsScreen = ({ navigation, route }) => {
 			<StatusBar style="auto" />
 
 			<TouchableHighlight
+				activeOpacity={1}
+				underlayColor={'#1565c0'}
 				style={styles.levelsBackButton}
 				onPress={() => {
 					navigation.navigate('Menu')
@@ -60,6 +62,8 @@ const LevelsScreen = ({ navigation, route }) => {
 					renderItem={ ({item}) => {
 						return (
 							<TouchableHighlight
+								activeOpacity={1}
+								underlayColor={'#1565c0'}
 								style={styles.levelButton}
 								onPress={() => {
 									time_tracker[difficulty.toLowerCase()][item.key] = "0:00.00";
@@ -152,7 +156,7 @@ const styles = StyleSheet.create({
 		backgroundColor : "#007acc",
 		height : 80,
 		paddingLeft : 24,
-		borderRadius : 4,
+		borderRadius : 2,
 		marginBottom : 10
 	},
 
@@ -190,13 +194,14 @@ const styles = StyleSheet.create({
 	},
 
 	levelsHeaderBottom : {
-		fontSize : 24
+		fontSize : 22,
+		marginBottom : 10
 	},
 
 		// LEVELS LIST & BUTTONS
 
 	levelsListView : {
-		flex : 3
+		flex : 5
 	},
 
 	levelButton : {
